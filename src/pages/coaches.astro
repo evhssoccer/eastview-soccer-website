@@ -1,0 +1,53 @@
+---
+import Base from "../layouts/Base.astro";
+import { getCoaches, getSettings } from "../lib/data";
+
+const [coaches, settings] = await Promise.all([getCoaches(), getSettings()]);
+const groups = (["Women", "Men"] as const).map((gender) => ({
+  gender,
+  coaches: coaches.filter((c) => c.teams.some((t) => t.gender === gender)),
+}));
+---
+<Base title="Coaches" active="coaches" description="East View Patriots soccer coaching staff.">
+  <div class="page-band">
+    <div class="wrap">
+      <p class="eyebrow">{settings.season} Season</p>
+      <h1>Coaching Staff</h1>
+    </div>
+  </div>
+  <div class="wrap section">
+    {coaches.length === 0 && <p class="empty">Coaching staff will be posted soon.</p>}
+    {groups.filter((g) => g.coaches.length).map((g) => (
+      <section class="grp">
+        <h2 class="section-title">{g.gender}'s Soccer</h2>
+        <div class="grid">
+          {g.coaches.map((c) => (
+            <article class="coach card">
+              {c.photo
+                ? <img src={c.photo} alt={`Coach ${c.name}`} width="120" height="120" loading="lazy">
+                : <span class="ph slab" aria-hidden="true">{c.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span>}
+              <h3>{c.name}</h3>
+              <p class="title">{c.title}</p>
+              <p class="teams">{c.teams.filter((t) => t.gender === g.gender).map((t) => t.name).join(" · ")}</p>
+              {c.bio && <p class="bio">{c.bio}</p>}
+              {c.email && <a href={`mailto:${c.email}`}>{c.email}</a>}
+            </article>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</Base>
+
+<style>
+  .grp + .grp { margin-top: 36px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .coach { padding: 24px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; border-top: 6px solid var(--navy); }
+  .coach img, .ph { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; }
+  .ph { display: grid; place-items: center; background: var(--navy); color: #fff; font-size: 2.2rem; }
+  h3 { color: var(--navy); font-size: 1.15rem; }
+  .title { margin: 4px 0 2px; font-weight: 800; color: var(--red-dark); font-size: 0.9rem; }
+  .teams { margin: 0 0 8px; color: var(--muted); font-size: 0.88rem; }
+  .bio { font-size: 0.92rem; text-align: left; }
+  .coach a { font-size: 0.88rem; word-break: break-all; }
+</style>

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "placeholder",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8517", "--directory", "placeholder"],
+      "port": 8517
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+---
+import { initials } from "../lib/data";
+interface Props { name: string; logo?: string; size?: number }
+const { name, logo = "", size = 56 } = Astro.props;
+---
+<span class="mark" style={`--s:${size}px`} aria-hidden="true">
+  {logo ? <img src={logo} alt="" loading="lazy" /> : <span>{initials(name)}</span>}
+</span>
+
+<style>
+  .mark {
+    flex: none; width: var(--s); height: var(--s); border-radius: 50%;
+    display: grid; place-items: center; overflow: hidden;
+    background: var(--soft); border: 2px solid var(--line); color: var(--navy);
+    font: 800 calc(var(--s) * 0.32) / 1 var(--sans); letter-spacing: 0.02em;
+  }
+  .mark:has(img) { background: #fff; }
+  img { width: 80%; height: 80%; object-fit: contain; }
+</style>

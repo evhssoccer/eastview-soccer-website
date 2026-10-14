@@ -1,0 +1,57 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getGames, getSettings, getTeams, isUpcoming, record } from "../../lib/data";
+import { fmtMonthDay, now } from "../../lib/time";
+
+const [teams, games, settings] = await Promise.all([getTeams(), getGames(), getSettings()]);
+const at = now();
+const groups = (["Women", "Men"] as const).map((gender) => ({
+  gender,
+  teams: teams.filter((t) => t.gender === gender).map((t) => {
+    const tg = games.filter((g) => g.team.slug === t.slug);
+    return { team: t, rec: record(tg), next: tg.find((g) => isUpcoming(g, at) && g.status === "Scheduled") };
+  }),
+}));
+---
+<Base title="Teams" active="teams">
+  <div class="page-band">
+    <div class="wrap">
+      <p class="eyebrow">{settings.season} Season</p>
+      <h1>Patriots Teams</h1>
+    </div>
+  </div>
+  <div class="wrap section">
+    {groups.map((grp) => (
+      <section class="grp">
+        <h2 class="section-title">{grp.gender}'s Soccer</h2>
+        <div class="grid">
+          {grp.teams.map(({ team, rec, next }) => (
+            <a class="team card" href={`/teams/${team.slug}/`}>
+              <span class="lvl slab">{team.level}</span>
+              <span class="nm">{team.name}</span>
+              <span class="rec">{rec.played ? `Record ${rec.overall}` : "Season starts soon"}</span>
+              {next && <span class="nx">Next: {next.venue === "Away" ? "at" : "vs"} {next.opponent}, {fmtMonthDay.format(next.start)}</span>}
+              <span class="go">Roster &amp; schedule &rarr;</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</Base>
+
+<style>
+  .grp + .grp { margin-top: 36px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .team {
+    display: flex; flex-direction: column; gap: 4px; padding: 22px; text-decoration: none; color: var(--ink);
+    border-top: 6px solid var(--navy); transition: transform 0.15s, border-color 0.15s;
+  }
+  .team:hover { transform: translateY(-2px); border-top-color: var(--red); }
+  .lvl { font-size: 1.7rem; color: var(--navy); text-transform: uppercase; }
+  .nm { font-weight: 800; color: var(--muted); }
+  .rec { margin-top: 8px; font-weight: 700; }
+  .nx { font-size: 0.9rem; color: var(--muted); }
+  .go { margin-top: 10px; font-weight: 800; color: var(--red-dark); }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+</style>

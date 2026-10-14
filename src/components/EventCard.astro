@@ -1,0 +1,49 @@
+---
+import type { ClubEvent } from "../lib/data";
+import { mapLink } from "../lib/data";
+import { fmtMonthDay, fmtTime, fmtWeekdayLong } from "../lib/time";
+
+interface Props { event: ClubEvent; compact?: boolean }
+const { event: e, compact = false } = Astro.props;
+const [mon, day] = fmtMonthDay.format(e.start).split(" ");
+const multiDay = e.end && fmtMonthDay.format(e.end) !== fmtMonthDay.format(e.start);
+const time = e.timeKnown
+  ? fmtTime.format(e.start) + (e.endTime && e.end && !multiDay ? ` – ${fmtTime.format(e.end)}` : "")
+  : "";
+const who = e.audience;
+---
+<article class:list={["event card", { compact }]}>
+  <div class="date" aria-hidden="true"><span class="mon">{mon}</span><span class="day slab">{day}</span></div>
+  <div class="body">
+    <p class="meta">
+      {fmtWeekdayLong.format(e.start)}{multiDay && ` – ${fmtMonthDay.format(e.end!)}`}{time && ` · ${time}`}
+    </p>
+    <h3>{e.title}</h3>
+    {(e.location || e.address) && (
+      <p class="loc"><a href={mapLink(e.address, e.location)} rel="noopener">{e.location || e.address}</a></p>
+    )}
+    {!compact && e.details && <p class="details">{e.details}</p>}
+    {who && <p class="who">{who}</p>}
+    {e.link && <a class="btn btn-red btn-sm no-print" href={e.link} rel="noopener">{e.linkText}</a>}
+  </div>
+  {!compact && e.image && <img class="flyer" src={e.image} alt="" loading="lazy">}
+</article>
+
+<style>
+  .event { display: flex; gap: 16px; padding: 16px; align-items: flex-start; height: 100%; }
+  .date {
+    flex: none; width: 64px; border-radius: 8px; overflow: hidden; text-align: center;
+    border: 2px solid var(--navy); display: flex; flex-direction: column;
+  }
+  .mon { background: var(--navy); color: #fff; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 0; }
+  .day { font-size: 1.6rem; color: var(--navy); padding: 4px 0 6px; }
+  .body { flex: 1; min-width: 0; }
+  .meta { margin: 0 0 2px; font-size: 0.82rem; font-weight: 700; color: var(--red-dark); }
+  h3 { font-size: 1.1rem; color: var(--navy); margin-bottom: 4px; }
+  .loc { margin: 0 0 6px; font-size: 0.88rem; }
+  .loc a { color: var(--muted); }
+  .details { margin: 0 0 8px; font-size: 0.95rem; }
+  .who { margin: 0 0 10px; font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .flyer { width: 160px; border-radius: 8px; border: 1px solid var(--line); }
+  @media (max-width: 600px) { .flyer { display: none; } }
+</style>

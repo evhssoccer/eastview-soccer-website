@@ -1,0 +1,16 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Page Not Found">
+  <div class="wrap section nf">
+    <img src="/images/logo-ball.png" alt="" width="120" height="120">
+    <h1 class="slab">Offside!</h1>
+    <p>We couldn't find that page. It may have moved when we rebuilt the site.</p>
+    <p><a class="btn btn-red" href="/">Home</a> <a class="btn btn-outline" href="/schedule/">Schedule</a></p>
+  </div>
+</Base>
+
+<style>
+  .nf { text-align: center; padding-top: 64px; padding-bottom: 64px; }
+  h1 { color: var(--navy); font-size: 3rem; text-transform: uppercase; margin: 16px 0 8px; }
+</style>

@@ -1,0 +1,47 @@
+---
+import Base from "../layouts/Base.astro";
+import EventCard from "../components/EventCard.astro";
+import { eventIsUpcoming, getEvents, getSettings } from "../lib/data";
+import { now } from "../lib/time";
+
+const [events, settings] = await Promise.all([getEvents(), getSettings()]);
+const at = now();
+const upcoming = events.filter((e) => eventIsUpcoming(e, at));
+const past = events.filter((e) => !eventIsUpcoming(e, at)).reverse();
+---
+<Base title="Events" active="events" description="Booster club events: banquets, Meet the Patriots, fundraisers, Senior Nights, and more.">
+  <div class="page-band">
+    <div class="wrap">
+      <p class="eyebrow">{settings.season} Season</p>
+      <h1>Booster Club Events</h1>
+    </div>
+  </div>
+  <div class="wrap section">
+    <div class="section-head">
+      <h2 class="section-title">Upcoming</h2>
+      <a class="btn btn-outline btn-sm no-print sub" href="/calendar/events.ics">Subscribe to Calendar</a>
+    </div>
+    {upcoming.length
+      ? <div class="list">{upcoming.map((e) => <EventCard event={e} />)}</div>
+      : <p class="empty">No upcoming events right now. Check back soon!</p>}
+
+    {past.length > 0 && (
+      <details class="past">
+        <summary>Past events this season ({past.length})</summary>
+        <div class="list">{past.map((e) => <EventCard event={e} compact />)}</div>
+      </details>
+    )}
+  </div>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLAnchorElement>('a[href$=".ics"]').forEach((a) => {
+    a.href = a.href.replace(/^https?:/, "webcal:");
+  });
+</script>
+
+<style>
+  .list { display: flex; flex-direction: column; gap: 14px; }
+  .past { margin-top: 36px; }
+  .past summary { cursor: pointer; font-weight: 800; color: var(--navy); margin-bottom: 14px; }
+</style>

@@ -1,0 +1,150 @@
+---
+/** "Next Game Day" card: one East View vs opponent matchup, then a Home and an Away column
+ *  (field, each team's kickoff, and that side's tickets link), plus a countdown to the next kickoff.
+ *  If several schools are played that day, each opponent gets its own matchup block. */
+import type { Game } from "../lib/data";
+import { groupMatchups, mapLink } from "../lib/data";
+import { fmtFull, fmtTime } from "../lib/time";
+import OpponentMark from "./OpponentMark.astro";
+
+interface Props { games: Game[]; showTeam?: boolean }
+const { games, showTeam = true } = Astro.props;
+const day = games[0];
+const kickoffs = games.filter((g) => g.timeKnown && g.status === "Scheduled").map((g) => g.start.toISOString());
+
+const matchups = groupMatchups(games);
+const single = games.length === 1;
+---
+<section class="next card" aria-label="Next game day">
+  <header class="top">
+    <p class="label">{single && !showTeam ? "Next Game" : single ? `Next Game · ${day.team.name}` : "Next Game Day"}</p>
+    <p class="date slab">{fmtFull.format(day.start)}</p>
+  </header>
+
+  {matchups.map((m) => (
+    <div class="matchup-block">
+      <div class="matchup">
+        <div class="side">
+          <OpponentMark name="East View" logo="/images/east-view-logo.png" size={64} />
+          <span class="nm">East View<small>Patriots</small></span>
+        </div>
+        <span class="vs" aria-hidden="true">vs</span>
+        <div class="side">
+          <OpponentMark name={m.opponent} logo={m.logo} size={64} />
+          <span class="nm">{m.opponent}{m.mascot && <small>{m.mascot}</small>}</span>
+        </div>
+      </div>
+
+      <div class:list={["cols", { one: m.columns.length === 1 }]}>
+        {m.columns.map((c) => (
+          <div class:list={["col", c.venue.toLowerCase()]}>
+            <p class="venue">{c.venue}</p>
+            {(c.location || c.address) && (
+              <p class="field"><a href={mapLink(c.address, c.location)} rel="noopener">{c.location || c.address}</a></p>
+            )}
+            <ul class="times">
+              {c.games.map((g) => (
+                <li class:list={{ off: g.status !== "Scheduled" }}>
+                  <span class="time">{g.status === "Postponed" ? "PPD" : g.timeKnown ? fmtTime.format(g.start) : "TBD"}</span>
+                  <span class="team">{g.team.name}{g.special && <em>{g.special}</em>}</span>
+                </li>
+              ))}
+            </ul>
+            {c.tickets && <a class="btn btn-red btn-sm tix no-print" href={c.tickets} rel="noopener">Tickets</a>}
+          </div>
+        ))}
+      </div>
+    </div>
+  ))}
+
+  {kickoffs.length > 0 && (
+    <div class="countdown" data-starts={kickoffs.join(",")}>
+      <p class="cd-label">Next kickoff in</p>
+      <div class="cd">
+        <div><b data-u="d">-</b><span>Days</span></div>
+        <div><b data-u="h">-</b><span>Hours</span></div>
+        <div><b data-u="m">-</b><span>Minutes</span></div>
+        <div><b data-u="s">-</b><span>Seconds</span></div>
+      </div>
+    </div>
+  )}
+</section>
+
+<script>
+  for (const el of document.querySelectorAll<HTMLElement>(".countdown[data-starts]")) {
+    const starts = el.dataset.starts!.split(",").map((s) => new Date(s).getTime());
+    const set = (u: string, v: number) => { el.querySelector(`[data-u="${u}"]`)!.textContent = String(v); };
+    const tick = () => {
+      const target = starts.find((t) => t > Date.now());
+      if (target === undefined) {
+        el.innerHTML = '<p class="live-now">Game time! Go Patriots!</p>';
+        clearInterval(timer);
+        return;
+      }
+      const left = target - Date.now();
+      set("d", Math.floor(left / 864e5));
+      set("h", Math.floor(left / 36e5) % 24);
+      set("m", Math.floor(left / 6e4) % 60);
+      set("s", Math.floor(left / 1e3) % 60);
+    };
+    const timer = setInterval(tick, 1000);
+    tick();
+  }
+</script>
+
+<style>
+  .next { overflow: hidden; }
+  .top { text-align: center; padding: 18px 20px 14px; background: var(--navy); color: #fff; border-bottom: 4px solid var(--red); }
+  .label { margin: 0; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #ffb3b4; }
+  .date { margin: 6px 0 0; font-size: clamp(1.15rem, 3vw, 1.45rem); text-transform: uppercase; }
+
+  .matchup-block { padding: 20px 18px; }
+  .matchup-block + .matchup-block { border-top: 1px solid var(--line); }
+  .matchup { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .side { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 150px; text-align: center; }
+  .side img { border-radius: 50%; }
+  .nm { font-weight: 800; color: var(--navy); line-height: 1.2; }
+  .nm small { display: block; font-weight: 600; font-size: 0.8rem; color: var(--muted); }
+  .vs {
+    width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    background: var(--red-dark); color: #fff; font-weight: 800; font-size: 0.78rem; text-transform: uppercase;
+  }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+  .cols.one { grid-template-columns: minmax(0, 340px); justify-content: center; }
+  .col {
+    display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px;
+    border-top: 5px solid var(--navy); padding: 12px 14px 14px; min-width: 0;
+  }
+  .col.home { border-top-color: var(--red); }
+  .venue { margin: 0; font-family: var(--slab); font-size: 1.1rem; text-transform: uppercase; color: var(--navy); }
+  .col.home .venue { color: var(--red-dark); }
+  .field { margin: 2px 0 10px; font-size: 0.88rem; font-weight: 700; }
+  .field a { color: var(--ink); }
+  .times { list-style: none; margin: 0 0 12px; padding: 0; flex: 1; }
+  .times li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; }
+  .times li + li { border-top: 1px dashed var(--line); }
+  .times li.off { opacity: 0.6; }
+  .time { font-weight: 800; color: var(--navy); width: 70px; flex: none; font-variant-numeric: tabular-nums; }
+  .team { font-size: 0.92rem; }
+  .team em { display: block; font-style: normal; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red-dark); }
+  .tix { align-self: stretch; }
+
+  .countdown { border-top: 1px solid var(--line); background: var(--soft); text-align: center; }
+  .cd-label { margin: 0; padding-top: 10px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .cd { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .cd div { padding: 6px 6px 12px; display: flex; flex-direction: column; align-items: center; }
+  .cd div + div { border-left: 1px solid var(--line); }
+  .cd b { font-family: var(--slab); font-weight: 400; font-size: 1.6rem; color: var(--red-dark); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .cd span { font-size: 0.75rem; color: var(--muted); }
+  :global(.live-now) { margin: 0; padding: 16px; font-family: var(--slab); color: var(--red-dark); font-size: 1.3rem; }
+
+  @media (max-width: 420px) {
+    .matchup-block { padding: 16px 12px; }
+    .side { width: 110px; }
+    .cols { gap: 8px; }
+    .col { padding: 10px; }
+    .time { width: auto; }
+    .times li { flex-direction: column; gap: 0; }
+  }
+</style>

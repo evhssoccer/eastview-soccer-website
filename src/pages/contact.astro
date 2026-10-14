@@ -1,0 +1,43 @@
+---
+import Base from "../layouts/Base.astro";
+import { getSettings } from "../lib/data";
+const settings = await getSettings();
+---
+<Base title="Contact" active="contact" description="Contact the East View High School Soccer Booster Club.">
+  <div class="page-band">
+    <div class="wrap">
+      <p class="eyebrow">Get in Touch</p>
+      <h1>Contact Us</h1>
+    </div>
+  </div>
+  <div class="wrap section grid">
+    <div class="card box">
+      <h2 class="section-title">Booster Club</h2>
+      <p>Questions about events, volunteering, sponsorships, or the banquet? Email the booster club board:</p>
+      <a class="btn btn-red" href={`mailto:${settings.email}`}>{settings.email}</a>
+      <p class="small">For questions about tryouts, practices, or playing time, please contact your team's coaches. Their emails are on each <a href="/teams/">team page</a>.</p>
+    </div>
+    <div class="card box">
+      <h2 class="section-title">East View High School</h2>
+      <p>4490 E University Ave<br>Georgetown, TX 78626</p>
+      <a class="btn btn-outline" href="https://www.google.com/maps/search/?api=1&query=East+View+High+School+4490+E+University+Ave+Georgetown+TX" rel="noopener">Get Directions</a>
+      <h2 class="section-title follow">Follow Us</h2>
+      <ul>
+        <li><a href="https://www.instagram.com/evhsgirlssoccerofficial/" rel="noopener">Women's soccer on Instagram</a></li>
+        <li><a href="https://www.instagram.com/evhsmenssoccerofficial/" rel="noopener">Men's soccer on Instagram</a></li>
+        <li><a href="https://x.com/ev_soccer" rel="noopener">@ev_soccer on X</a> &middot; <a href="https://x.com/patriotsoccerev" rel="noopener">@patriotsoccerev on X</a></li>
+      </ul>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .box { padding: 24px; }
+  .box .btn { word-break: break-all; white-space: normal; }
+  .small { font-size: 0.9rem; color: var(--muted); margin-top: 18px; }
+  .follow { margin-top: 28px; }
+  ul { padding-left: 18px; }
+  li { margin-bottom: 6px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+</style>

@@ -1,0 +1,206 @@
+---
+import "../styles/global.css";
+import { getSettings, getTeams } from "../lib/data";
+import { usingSampleData } from "../lib/sheet";
+
+interface Props {
+  title?: string;
+  description?: string;
+  active?: string;
+}
+const { title, description, active = "" } = Astro.props;
+const [settings, teams] = await Promise.all([getSettings(), getTeams()]);
+const pageTitle = title ? `${title} | East View Soccer` : "East View Soccer | Georgetown, TX";
+const desc = description ?? `East View High School Soccer Booster Club, Georgetown, TX. Schedules, rosters, and events for the ${settings.season} season.`;
+const women = teams.filter((t) => t.gender === "Women");
+const men = teams.filter((t) => t.gender === "Men");
+const nav = [
+  ["Home", "/", "home"],
+  ["Schedule", "/schedule/", "schedule"],
+  ["Teams", "/teams/", "teams"],
+  ["Coaches", "/coaches/", "coaches"],
+  ["Events", "/events/", "events"],
+  ["About", "/about/", "about"],
+  ["Contact", "/contact/", "contact"],
+];
+const sample = usingSampleData();
+// Mockup/staging deploys set NOINDEX=1 so search engines don't list them.
+const noindex = sample || process.env.NOINDEX === "1";
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{pageTitle}</title>
+  <meta name="description" content={desc}>
+  <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)}>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/images/logo-ball.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content={pageTitle}>
+  <meta property="og:description" content={desc}>
+  <meta property="og:image" content={new URL("/images/patriots-flag.jpg", Astro.site)}>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap" rel="stylesheet">
+  {noindex && <meta name="robots" content="noindex">}
+</head>
+<body>
+  <a class="skip visually-hidden" href="#main">Skip to content</a>
+  {sample && <div class="sample-bar">Preview using SAMPLE data. Not connected to the Google Sheet yet.</div>}
+  {settings.announcement && (
+    <div class="announce">
+      <div class="wrap">
+        {settings.announcementLink
+          ? <a href={settings.announcementLink}>{settings.announcement} &rarr;</a>
+          : <span>{settings.announcement}</span>}
+      </div>
+    </div>
+  )}
+  <header class="site-header">
+    <div class="wrap bar">
+      <a class="brand" href="/" aria-label="East View Soccer home">
+        <img src="/images/logo-ball.png" alt="" width="52" height="52">
+        <span class="brand-text">
+          <span class="brand-name slab">East View Soccer</span>
+          <span class="brand-sub">Patriots &middot; Georgetown, TX</span>
+        </span>
+      </a>
+      <div class="menu">
+        <button class="menu-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="main-nav"><span></span><span></span><span></span></button>
+        <nav id="main-nav" aria-label="Main">
+          <ul>
+            {nav.map(([label, href, key]) => key === "teams" ? (
+              <li class="has-sub">
+                <a href={href} class:list={{ active: active === key }}>{label}</a>
+                <div class="sub">
+                  <div>
+                    <p>Women</p>
+                    {women.map((t) => <a href={`/teams/${t.slug}/`}>{t.level}</a>)}
+                  </div>
+                  <div>
+                    <p>Men</p>
+                    {men.map((t) => <a href={`/teams/${t.slug}/`}>{t.level}</a>)}
+                  </div>
+                </div>
+              </li>
+            ) : (
+              <li><a href={href} class:list={{ active: active === key }}>{label}</a></li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+  <script>
+    const btn = document.querySelector<HTMLButtonElement>(".menu-btn")!;
+    btn.addEventListener("click", () => {
+      const open = btn.getAttribute("aria-expanded") !== "true";
+      btn.setAttribute("aria-expanded", String(open));
+      btn.closest(".menu")!.classList.toggle("open", open);
+    });
+  </script>
+
+  <main id="main">
+    <slot />
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap foot-grid">
+      <div>
+        <a class="brand brand-foot" href="/">
+          <img src="/images/logo-ball.png" alt="" width="44" height="44">
+          <span class="brand-name slab">East View Soccer</span>
+        </a>
+        <p>The volunteer booster club supporting East View High School men's and women's soccer since 2011. Go Patriots!</p>
+      </div>
+      <div>
+        <h2>Teams</h2>
+        <ul>{teams.map((t) => <li><a href={`/teams/${t.slug}/`}>{t.name}</a></li>)}</ul>
+      </div>
+      <div>
+        <h2>Follow</h2>
+        <ul>
+          <li><a href="https://www.instagram.com/evhsgirlssoccerofficial/" rel="noopener">Women's soccer on Instagram</a></li>
+          <li><a href="https://www.instagram.com/evhsmenssoccerofficial/" rel="noopener">Men's soccer on Instagram</a></li>
+          <li><a href="https://x.com/ev_soccer" rel="noopener">@ev_soccer on X</a></li>
+          <li><a href="https://x.com/patriotsoccerev" rel="noopener">@patriotsoccerev on X</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Contact</h2>
+        <p><a href={`mailto:${settings.email}`}>{settings.email}</a></p>
+        <p>East View High School<br>4490 E University Ave<br>Georgetown, TX 78626</p>
+      </div>
+    </div>
+    <div class="wrap fine">
+      <p>&copy; {new Date().getFullYear()} East View High School Soccer Booster Club. The booster club is an independent volunteer organization and is not part of East View High School or Georgetown ISD.</p>
+    </div>
+  </footer>
+</body>
+</html>
+
+<style>
+  .skip:focus { position: fixed; top: 8px; left: 8px; width: auto; height: auto; clip: auto; margin: 0; padding: 10px 14px; background: #fff; z-index: 100; }
+  .sample-bar { background: #fff4cc; color: #6b5200; text-align: center; font-size: 0.85rem; font-weight: 700; padding: 6px 16px; }
+  .announce { background: var(--red-dark); color: #fff; text-align: center; font-weight: 700; font-size: 0.92rem; }
+  .announce .wrap { padding-top: 9px; padding-bottom: 9px; }
+  .announce a { color: #fff; }
+
+  .site-header { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 50; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--navy); }
+  .brand-text { display: flex; flex-direction: column; }
+  .brand-name { font-size: 1.3rem; text-transform: uppercase; line-height: 1; }
+  .brand-sub { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
+
+  .menu-btn { display: none; }
+  .menu nav ul { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+  .menu nav li { position: relative; }
+  .menu nav a {
+    display: block; padding: 10px 12px; color: var(--navy); text-decoration: none;
+    font-weight: 800; font-size: 0.86rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 6px;
+  }
+  .menu nav a:hover { background: var(--soft); }
+  .menu nav a.active { color: var(--red-dark); box-shadow: inset 0 -3px 0 var(--red); border-radius: 0; }
+  .sub {
+    display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 12px; gap: 12px; grid-template-columns: 1fr 1fr; min-width: 340px;
+  }
+  .sub p { margin: 4px 12px 6px; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .sub a { text-transform: none; letter-spacing: 0; font-size: 0.95rem; }
+  .has-sub:hover .sub, .has-sub:focus-within .sub { display: grid; }
+
+  @media (max-width: 940px) {
+    .menu-btn {
+      display: flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; padding: 10px; cursor: pointer; border: 0; background: none; border-radius: 6px;
+    }
+    .menu-btn span { display: block; height: 3px; background: var(--navy); border-radius: 2px; }
+    .menu:not(.open) nav { display: none; }
+    .menu nav {
+      position: absolute; left: 0; right: 0; top: 100%; background: #fff;
+      border-bottom: 1px solid var(--line); box-shadow: var(--shadow); padding: 8px 16px 16px;
+    }
+    .menu nav ul { flex-direction: column; }
+    .sub { display: grid; position: static; transform: none; box-shadow: none; border: 0; padding: 0 0 4px 8px; min-width: 0; }
+    .menu nav a.active { box-shadow: inset 4px 0 0 var(--red); }
+    .brand-name { font-size: 1.1rem; }
+  }
+
+  .site-footer { background: var(--navy-ink); color: #c9d6de; margin-top: 48px; border-top: 6px solid var(--red); }
+  .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1.2fr 1.2fr; gap: 32px; padding-top: 40px; padding-bottom: 28px; }
+  .site-footer h2 { font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; color: #8fb1c5; margin-bottom: 12px; }
+  .site-footer ul { list-style: none; margin: 0; padding: 0; }
+  .site-footer li { margin-bottom: 8px; }
+  .site-footer a { color: #fff; text-decoration: none; }
+  .site-footer a:hover { text-decoration: underline; }
+  .site-footer p { margin: 0 0 10px; }
+  .brand-foot { color: #fff; margin-bottom: 12px; }
+  .fine { border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 16px; padding-bottom: 24px; font-size: 0.8rem; color: #8fa3af; }
+  @media (max-width: 860px) { .foot-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .foot-grid { grid-template-columns: 1fr; } }
+</style>

@@ -1,0 +1,13 @@
+---
+import Base from "../../layouts/Base.astro";
+import ScheduleView from "../../components/ScheduleView.astro";
+import { getTeams, type Team } from "../../lib/data";
+
+export async function getStaticPaths() {
+  return (await getTeams()).map((team) => ({ params: { team: team.slug }, props: { team } }));
+}
+const { team } = Astro.props as { team: Team };
+---
+<Base title={`${team.name} Schedule`} active="schedule" description={`East View ${team.name} soccer schedule and results.`}>
+  <ScheduleView team={team} />
+</Base>

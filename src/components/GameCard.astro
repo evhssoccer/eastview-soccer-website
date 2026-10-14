@@ -1,0 +1,97 @@
+---
+import type { Game } from "../lib/data";
+import { mapLink } from "../lib/data";
+import { googleCalendarLink } from "../lib/calendar";
+import { fmtMonthDay, fmtTime, fmtWeekday } from "../lib/time";
+import OpponentMark from "./OpponentMark.astro";
+
+interface Props { game: Game; showTeam?: boolean; upcoming: boolean }
+const { game: g, showTeam = true, upcoming } = Astro.props;
+const time = g.timeKnown ? fmtTime.format(g.start) : "TBD";
+const resultClass = g.result === "W" ? "win" : g.result === "L" ? "loss" : "tie";
+---
+<article class:list={["game card", g.venue.toLowerCase(), { done: !!g.result, off: g.status !== "Scheduled" && !g.result }]}>
+  <div class="when">
+    <span class="md">{fmtMonthDay.format(g.start)}</span>
+    <span class="wd">{fmtWeekday.format(g.start)}</span>
+    <span class="tm">{time}</span>
+  </div>
+
+  <div class="matchup">
+    <OpponentMark name={g.opponent} logo={g.opponentLogo} />
+    <div class="info">
+      <div class="tags">
+        {showTeam && <span class="badge badge-navy">{g.team.name}</span>}
+        <span class="badge">{g.venue === "Home" ? "Home" : g.venue === "Away" ? "Away" : "Neutral"}</span>
+        {g.district && <span class="badge badge-red">District</span>}
+        {g.special && <span class="badge badge-red">{g.special}</span>}
+      </div>
+      <h3 class="opp">
+        <span class="vs">{g.venue === "Away" ? "at" : "vs"}</span> {g.opponent}
+        {g.opponentMascot && <span class="mascot">{g.opponentMascot}</span>}
+      </h3>
+      {(g.location || g.address) && (
+        <p class="loc">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+          <a href={mapLink(g.address, g.location)} rel="noopener">{g.location || g.address}</a>
+          {g.location && g.address && <span class="addr">{g.address}</span>}
+        </p>
+      )}
+      {g.notes && <p class="notes">{g.notes}</p>}
+    </div>
+  </div>
+
+  <div class="side">
+    {g.result ? (
+      <p class:list={["result", resultClass]}><span>{g.result}</span>, {g.evScore}-{g.oppScore}</p>
+    ) : g.status === "Postponed" ? (
+      <p class="result tie">Postponed</p>
+    ) : g.status === "Canceled" ? (
+      <p class="result tie">Canceled</p>
+    ) : null}
+    <div class="actions no-print">
+      {upcoming && g.ticketsLink && <a class="btn btn-red btn-sm" href={g.ticketsLink} rel="noopener">Tickets</a>}
+      {g.recapLink && <a class="btn btn-outline btn-sm" href={g.recapLink} rel="noopener">Recap</a>}
+      {upcoming && g.status === "Scheduled" && (
+        <a class="btn btn-outline btn-sm" href={googleCalendarLink(g)} rel="noopener" title="Add to Google Calendar">+ Calendar</a>
+      )}
+    </div>
+  </div>
+</article>
+
+<style>
+  .game {
+    display: grid; grid-template-columns: 96px 1fr auto; gap: 20px; align-items: center;
+    padding: 18px 20px; border-left: 6px solid var(--navy); margin-bottom: 14px;
+  }
+  .game.home { border-left-color: var(--red); }
+  .game.off { opacity: 0.7; }
+  .when { display: flex; flex-direction: column; align-items: flex-start; border-right: 1px solid var(--line); padding-right: 12px; }
+  .md { font-family: var(--slab); font-size: 1.35rem; color: var(--navy); text-transform: uppercase; line-height: 1.1; }
+  .wd { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .tm { font-size: 0.92rem; font-weight: 800; color: var(--ink); margin-top: 4px; }
+  .matchup { display: flex; gap: 16px; align-items: center; min-width: 0; }
+  .info { min-width: 0; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .opp { font-size: 1.15rem; font-weight: 800; color: var(--navy); }
+  .mascot { font-weight: 600; font-size: 0.85rem; color: var(--muted); margin-left: 4px; }
+  .vs { font-weight: 600; color: var(--muted); font-size: 0.95rem; }
+  .loc { margin: 4px 0 0; font-size: 0.88rem; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+  .loc a { color: var(--ink); }
+  .addr::before { content: "· "; }
+  .notes { margin: 4px 0 0; font-size: 0.85rem; color: var(--muted); font-style: italic; }
+  .side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .result { margin: 0; font-family: var(--slab); font-size: 1.4rem; white-space: nowrap; }
+  .result.win { color: var(--win); }
+  .result.loss { color: var(--loss); }
+  .result.tie { color: var(--tie); font-size: 1.1rem; }
+  .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+
+  @media (max-width: 760px) {
+    .game { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
+    .when { flex-direction: row; align-items: baseline; gap: 8px; border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 10px; }
+    .tm { margin: 0 0 0 auto; }
+    .side { align-items: flex-start; }
+    .actions { justify-content: flex-start; }
+  }
+</style>

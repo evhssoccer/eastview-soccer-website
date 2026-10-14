@@ -1,0 +1,253 @@
+---
+import Base from "../layouts/Base.astro";
+import NextGame from "../components/NextGame.astro";
+import EventCard from "../components/EventCard.astro";
+import OpponentMark from "../components/OpponentMark.astro";
+import {
+  eventIsUpcoming, getEvents, getGames, getSettings, getSponsors, getTeams, groupMatchups, isUpcoming, mapLink,
+  nextGameDay,
+} from "../lib/data";
+import { fmtMonthDay, fmtTime, fmtWeekday, now } from "../lib/time";
+
+const [games, events, settings, teams, sponsors] = await Promise.all([
+  getGames(), getEvents(), getSettings(), getTeams(), getSponsors(),
+]);
+const at = now();
+const upcomingGames = games.filter((g) => isUpcoming(g, at));
+const nextDay = nextGameDay(games, at);
+// The list continues after the game day already shown in the Next Game Day card.
+// One card per date + opponent, with that night's Home and Away games side by side.
+// Coming Up covers the two weeks (Settings: Coming Up Days) after the Next Game Day.
+const windowEnd = (nextDay[0]?.start ?? at).getTime() + settings.comingUpDays * 864e5;
+const list = groupMatchups(upcomingGames.filter((g) => !nextDay.includes(g) && g.start.getTime() <= windowEnd));
+const upcomingEvents = events.filter((e) => eventIsUpcoming(e, at)).slice(0, settings.homeEvents);
+const results = games.filter((g) => g.result).slice(-4).reverse();
+---
+<Base active="home">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <img class="flag" src="/images/patriots-flag.jpg" width="1200" height="677"
+           alt="East View Patriots soccer flag: a soccer ball with the EV logo, red and white stripes, and the word PATRIOTS">
+      <div class="hero-text">
+        <p class="season">Season {settings.season}</p>
+        <h1 class="slab">East View <span>Soccer</span></h1>
+        <p class="lede">Six teams, one Patriot family. Schedules, scores, rosters, and booster club events for East View High School men's and women's soccer.</p>
+        <div class="cta">
+          <a class="btn btn-red" href="/schedule/">Full Schedule</a>
+          <a class="btn btn-outline" href="/teams/">Teams &amp; Rosters</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">Upcoming Games</h2>
+        <a class="more-link" href="/schedule/">All games &rarr;</a>
+      </div>
+      {list.length === 0 && nextDay.length === 0 ? (
+        <p class="empty">No upcoming games posted yet. The {settings.season} schedule is coming soon!</p>
+      ) : (
+        <div class:list={["games-grid", { "one-col": !nextDay.length || !list.length }]}>
+          {nextDay.length > 0 && <NextGame games={nextDay} />}
+          {list.length > 0 && (
+          <div>
+          <h3 class="coming">Coming Up</h3>
+          <ol class="upcoming">
+            {list.map((m) => (
+              <li class="card">
+                <div class="head">
+                  <div class="d">
+                    <span class="md">{fmtMonthDay.format(m.start)}</span>
+                    <span class="wd">{fmtWeekday.format(m.start)}</span>
+                  </div>
+                  <OpponentMark name={m.opponent} logo={m.logo} size={40} />
+                  <p class="o">vs {m.opponent}{m.mascot && <small>{m.mascot}</small>}</p>
+                </div>
+                <div class:list={["cols", { one: m.columns.length === 1 }]}>
+                  {m.columns.map((c) => (
+                    <div class:list={["col", c.venue.toLowerCase()]}>
+                      <p class="venue">{c.venue}
+                        {(c.location || c.address) && <a href={mapLink(c.address, c.location)} rel="noopener">{c.location || c.address}</a>}
+                      </p>
+                      <ul>
+                        {c.games.map((g) => (
+                          <li class:list={{ off: g.status !== "Scheduled" }}>
+                            <span class="tm">{g.status === "Postponed" ? "PPD" : g.timeKnown ? fmtTime.format(g.start) : "TBD"}</span>
+                            <a href={`/schedule/${g.team.slug}/#g-${g.id}`}>{g.team.name}</a>
+                            {g.special && <b class="sp">{g.special}</b>}
+                          </li>
+                        ))}
+                      </ul>
+                      {c.tickets && <a class="btn btn-red btn-sm tix" href={c.tickets} rel="noopener">Tickets</a>}
+                    </div>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ol>
+          </div>
+          )}
+        </div>
+      )}
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">Upcoming Events</h2>
+        <a class="more-link" href="/events/">All events &rarr;</a>
+      </div>
+      {upcomingEvents.length ? (
+        <div class="events-grid">
+          {upcomingEvents.map((e) => <EventCard event={e} compact />)}
+        </div>
+      ) : <p class="empty">No upcoming events right now. Follow us on Instagram for the latest news.</p>}
+    </section>
+
+    {results.length > 0 && (
+      <section class="section">
+        <div class="section-head">
+          <h2 class="section-title">Latest Results</h2>
+          <a class="more-link" href="/schedule/">All results &rarr;</a>
+        </div>
+        <div class="results">
+          {results.map((g) => (
+            <a class="res card" href={`/schedule/${g.team.slug}/#g-${g.id}`}>
+              <span class="t">{g.team.name} &middot; {fmtMonthDay.format(g.start)}</span>
+              <span class="o">{g.venue === "Away" ? "at" : "vs"} {g.opponent}</span>
+              <span class:list={["s", "slab", g.result === "W" ? "w" : g.result === "L" ? "l" : "tie"]}>{g.result} {g.evScore}-{g.oppScore}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section class="section">
+      <h2 class="section-title">Our Teams</h2>
+      <div class="teams">
+        {(["Women", "Men"] as const).map((gender) => (
+          <div class="tgroup card">
+            <h3>{gender}'s Soccer</h3>
+            <ul>
+              {teams.filter((t) => t.gender === gender).map((t) => (
+                <li>
+                  <a href={`/teams/${t.slug}/`}>{t.name}</a>
+                  <a class="sch" href={`/schedule/${t.slug}/`}>Schedule</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="section volunteer card">
+      <div>
+        <h2 class="slab">Join the Booster Club</h2>
+        <p>We're 100% volunteer-run. Help with concessions, Senior Nights, the end-of-year banquet, photography, and more.</p>
+      </div>
+      <a class="btn btn-red" href="/about/#volunteer">Volunteer</a>
+    </section>
+
+    {sponsors.length > 0 && (
+      <section class="section">
+        <h2 class="section-title">Thank You to Our Sponsors</h2>
+        <ul class="sponsors">
+          {sponsors.map((s) => {
+            const inner = s.logo ? <img src={s.logo} alt={s.name} loading="lazy"> : <span>{s.name}</span>;
+            return <li class="card">{s.website ? <a href={s.website} rel="noopener sponsored">{inner}</a> : inner}</li>;
+          })}
+        </ul>
+      </section>
+    )}
+  </div>
+</Base>
+
+<style>
+  .hero { background: #fff; border-bottom: 1px solid var(--line); }
+  .hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; padding-top: 32px; padding-bottom: 36px; }
+  .flag { width: 100%; }
+  .season {
+    display: inline-block; margin: 0 0 14px; padding: 6px 16px; border: 3px solid var(--navy); border-radius: 999px;
+    color: var(--navy); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.9rem;
+  }
+  .hero h1 { font-size: clamp(2.4rem, 6vw, 4rem); color: var(--navy); text-transform: uppercase; }
+  .hero h1 span { color: var(--red); }
+  .lede { font-size: 1.1rem; color: var(--muted); margin: 14px 0 22px; max-width: 32rem; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  .games-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 24px; align-items: start; }
+  .games-grid.one-col { grid-template-columns: minmax(0, 760px); }
+  .coming { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .upcoming { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .upcoming > li { padding: 12px 14px; }
+  .head { display: flex; align-items: center; gap: 12px; }
+  .d { width: 54px; flex: none; display: flex; flex-direction: column; }
+  .md { font-family: var(--slab); color: var(--navy); text-transform: uppercase; font-size: 1.05rem; line-height: 1.1; }
+  .wd { font-size: 0.72rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .o { margin: 0; font-weight: 800; color: var(--navy); line-height: 1.2; }
+  .o small { margin-left: 6px; font-weight: 600; color: var(--muted); font-size: 0.82rem; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .cols.one { grid-template-columns: 1fr; }
+  .col { display: flex; flex-direction: column; border: 1px solid var(--line); border-top: 4px solid var(--navy); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+  .col.home { border-top-color: var(--red); }
+  .venue { margin: 0 0 4px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--navy); }
+  .col.home .venue { color: var(--red-dark); }
+  .venue a { display: block; letter-spacing: 0; text-transform: none; font-size: 0.8rem; font-weight: 700; color: var(--ink); }
+  .col ul { list-style: none; margin: 0 0 8px; padding: 0; flex: 1; }
+  .col li { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 0.85rem; padding: 2px 0; }
+  .col li.off { opacity: 0.6; }
+  .col li a { color: var(--ink); text-decoration: none; }
+  .col li a:hover { text-decoration: underline; }
+  .tm { font-weight: 800; color: var(--navy); min-width: 62px; font-variant-numeric: tabular-nums; }
+  .sp { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red-dark); }
+  .tix { align-self: stretch; }
+
+  .events-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+  .results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .res { display: flex; flex-direction: column; padding: 16px; text-decoration: none; color: var(--ink); }
+  .res .t { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .res .o { font-weight: 800; color: var(--navy); margin: 4px 0 6px; }
+  .res .s { font-size: 1.4rem; }
+  .res .w { color: var(--win); } .res .l { color: var(--loss); } .res .tie { color: var(--tie); }
+
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .tgroup { padding: 20px; border-top: 6px solid var(--navy); }
+  .tgroup h3 { font-family: var(--slab); font-weight: 400; text-transform: uppercase; color: var(--navy); margin-bottom: 10px; }
+  .tgroup ul { list-style: none; margin: 0; padding: 0; }
+  .tgroup li { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--line); }
+  .tgroup li a { font-weight: 800; color: var(--navy); text-decoration: none; }
+  .tgroup li a:hover { text-decoration: underline; }
+  .tgroup li a.sch { font-weight: 600; color: var(--red-dark); font-size: 0.9rem; }
+
+  .volunteer {
+    display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 28px;
+    background: var(--navy); color: #fff; border: 0; margin: 12px 0;
+  }
+  .volunteer h2 { font-size: 1.5rem; text-transform: uppercase; }
+  .volunteer p { margin: 6px 0 0; color: #c9d6de; max-width: 40rem; }
+
+  .sponsors { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .sponsors li { display: grid; place-items: center; padding: 16px; min-height: 90px; text-align: center; font-weight: 800; color: var(--navy); }
+  .sponsors a { color: inherit; text-decoration: none; }
+  .sponsors img { max-height: 60px; width: auto; }
+
+  @media (max-width: 960px) {
+    .games-grid { grid-template-columns: 1fr; }
+    .results { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 760px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 20px; text-align: center; padding-top: 20px; }
+    .lede { margin-left: auto; margin-right: auto; }
+    .cta { justify-content: center; }
+    .events-grid, .teams { grid-template-columns: 1fr; }
+    .volunteer { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 460px) {
+    .results { grid-template-columns: 1fr; }
+    .col li { flex-direction: column; padding: 4px 0; }
+    .col li + li { border-top: 1px dashed var(--line); }
+  }
+</style>

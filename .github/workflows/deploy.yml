@@ -1,0 +1,62 @@
+# Builds the site from the Google Sheet and uploads it to Bluehost.
+# Runs every hour, on every push to main, and on demand (Actions tab → Deploy site → Run workflow).
+#
+# Where it goes is set by the DEPLOY_PATH repository variable:
+#   mockup.eastviewsoccer.com  → https://mockup.eastviewsoccer.com (hidden from search engines)
+#   public_html                → https://eastviewsoccer.com (the live site)
+# While DEPLOY_PATH is unset, the workflow skips deploying entirely.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "7 * * * *" # hourly, at :07
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_PATH != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build from Google Sheet
+        run: |
+          if [ "$DEPLOY_PATH" != "public_html" ]; then export NOINDEX=1; fi
+          npm run build
+          if [ "$DEPLOY_PATH" != "public_html" ]; then printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt; fi
+        env:
+          SHEET_PUB_ID: ${{ vars.SHEET_PUB_ID }}
+          ROSTER_PUB_ID: ${{ vars.ROSTER_PUB_ID }}
+
+      - name: Upload to Bluehost
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ vars.DEPLOY_HOST }}
+          SSH_USER: ${{ vars.DEPLOY_USER }}
+          SSH_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # --checksum: only changed files go up; --delete removes pages that no longer exist.
+          # .well-known (SSL validation) and cgi-bin belong to Bluehost, so leave them alone.
+          rsync -rlz --checksum --delete \
+            --exclude '.well-known/' --exclude 'cgi-bin/' \
+            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+            dist/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"

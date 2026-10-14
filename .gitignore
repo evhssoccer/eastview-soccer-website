@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.astro/
+.env
+# Old WordPress export and roster reference: local only, never commit (contains minors' data)
+old-site-content/
+sheet-template/2024-25-Rosters-REFERENCE-ONLY.xlsx
+.claude/settings.local.json

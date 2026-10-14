@@ -1,0 +1,17 @@
+# Placeholder site: serve index.html; send every old WordPress URL to the home page
+DirectoryIndex index.html
+Options -Indexes
+
+# Hardening: the placeholder is static, so no PHP may run anywhere in public_html
+<FilesMatch "\.(php[0-9]?|phtml|phar|pht|shtml|cgi|pl|py)$">
+  Require all denied
+</FilesMatch>
+RemoveHandler .php .php8 .phtml
+RemoveType .php .php8 .phtml
+
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+RewriteCond %{REQUEST_URI} !^/\.well-known/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule . / [L,R=302]

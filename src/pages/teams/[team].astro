@@ -1,0 +1,105 @@
+---
+import Base from "../../layouts/Base.astro";
+import GameCard from "../../components/GameCard.astro";
+import RecordBar from "../../components/RecordBar.astro";
+import { getCoaches, getGames, getPlayers, getSettings, getTeams, isUpcoming, record, type Team } from "../../lib/data";
+import { now } from "../../lib/time";
+
+export async function getStaticPaths() {
+  return (await getTeams()).map((team) => ({ params: { team: team.slug }, props: { team } }));
+}
+const { team } = Astro.props as { team: Team };
+const [games, players, coaches, settings] = await Promise.all([getGames(), getPlayers(), getCoaches(), getSettings()]);
+const at = now();
+const teamGames = games.filter((g) => g.team.slug === team.slug);
+const upcoming = teamGames.filter((g) => isUpcoming(g, at)).slice(0, 3);
+const recent = teamGames.filter((g) => g.result).slice(-3).reverse();
+const roster = players.filter((p) => p.team.slug === team.slug);
+const staff = coaches.filter((c) => c.teams.some((t) => t.slug === team.slug));
+const hasPos = roster.some((p) => p.position);
+const hasClass = roster.some((p) => p.classYear);
+---
+<Base title={team.name} active="teams" description={`East View ${team.name} soccer: ${settings.season} roster, coaches, and schedule.`}>
+  <div class="page-band">
+    <div class="wrap">
+      <p class="eyebrow">{settings.season} &middot; {team.gender}'s Soccer</p>
+      <h1>{team.name}</h1>
+    </div>
+  </div>
+
+  <div class="wrap section">
+    <RecordBar rec={record(teamGames)} districtName={settings.districtName} />
+
+    <div class="cols">
+      <section>
+        <div class="section-head">
+          <h2 class="section-title">Upcoming Games</h2>
+          <a class="more-link" href={`/schedule/${team.slug}/`}>Full schedule &rarr;</a>
+        </div>
+        {upcoming.length
+          ? upcoming.map((g) => <GameCard game={g} showTeam={false} upcoming />)
+          : <p class="empty">No upcoming games posted.</p>}
+
+        {recent.length > 0 && (
+          <>
+            <h2 class="section-title recent">Recent Results</h2>
+            {recent.map((g) => <GameCard game={g} showTeam={false} upcoming={false} />)}
+          </>
+        )}
+      </section>
+
+      <aside>
+        <h2 class="section-title">Coaches</h2>
+        {staff.length ? (
+          <ul class="staff">
+            {staff.map((c) => (
+              <li class="card">
+                {c.photo ? <img src={c.photo} alt="" width="56" height="56" loading="lazy"> : <span class="ph" aria-hidden="true">{c.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span>}
+                <div>
+                  <p class="cn">{c.name}</p>
+                  <p class="ct">{c.title}</p>
+                  {c.email && <a href={`mailto:${c.email}`}>{c.email}</a>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : <p class="empty">Coaches to be announced.</p>}
+      </aside>
+    </div>
+
+    <section class="roster">
+      <h2 class="section-title">{settings.season} Roster</h2>
+      {roster.length ? (
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>#</th><th>Name</th>{hasPos && <th>Pos</th>}{hasClass && <th>Class</th>}</tr></thead>
+            <tbody>
+              {roster.map((p) => (
+                <tr>
+                  <td class="num">{p.number}</td>
+                  <td>{p.first} {p.last}</td>
+                  {hasPos && <td>{p.position}</td>}
+                  {hasClass && <td>{p.classYear}</td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : <p class="empty">The {settings.season} roster will be posted after tryouts.</p>}
+    </section>
+  </div>
+</Base>
+
+<style>
+  .cols { display: grid; grid-template-columns: 1fr 340px; gap: 32px; margin-top: 32px; }
+  .recent { margin-top: 28px; }
+  .staff { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .staff li { display: flex; gap: 14px; align-items: center; padding: 14px; }
+  .staff img, .ph { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: none; }
+  .ph { display: grid; place-items: center; background: var(--navy); color: #fff; font-weight: 800; }
+  .cn { margin: 0; font-weight: 800; color: var(--navy); }
+  .ct { margin: 0 0 2px; font-size: 0.88rem; color: var(--muted); }
+  .staff a { font-size: 0.85rem; word-break: break-all; }
+  .roster { margin-top: 40px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+</style>

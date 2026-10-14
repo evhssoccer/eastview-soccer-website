@@ -1,0 +1,82 @@
+---
+import Base from "../layouts/Base.astro";
+import { getBoard, getSettings, getSponsors } from "../lib/data";
+
+const [board, settings, sponsors] = await Promise.all([getBoard(), getSettings(), getSponsors()]);
+const volunteer = [
+  ["Board members", "Help lead the booster club for the season."],
+  ["Meet the Patriots dinner", "Kick off the season with players, families, and coaches."],
+  ["Tournaments & Cups", "Preparation for the Governor's Cup and State Cup."],
+  ["Photographers & videographers", "Capture game days and senior moments."],
+  ["Concessions", "During home games, the Governor's Cup, and the State Cup."],
+  ["Senior Nights", "Celebrate our seniors' final home games."],
+  ["End-of-year banquet", "Plan and run the season-ending celebration."],
+];
+---
+<Base title="About" active="about" description="About the East View High School Soccer Booster Club, its board, and how to volunteer.">
+  <div class="page-band">
+    <div class="wrap">
+      <p class="eyebrow">Established 2011</p>
+      <h1>About the Booster Club</h1>
+    </div>
+  </div>
+
+  <div class="wrap section">
+    <div class="intro">
+      <img src="/images/logo-ball.png" alt="" width="140" height="140">
+      <p>The East View High School Soccer Booster Club was established in 2011. It is a fully volunteer organization whose purpose is to enthusiastically support East View Soccer, both morally and financially. <strong>Go Patriots!</strong></p>
+    </div>
+
+    <section id="volunteer" class="vol">
+      <h2 class="section-title">We Need You</h2>
+      <p>Every year we need volunteers for these activities and events. Interested? <a href={`mailto:${settings.email}?subject=Volunteering`}>Email the board</a>.</p>
+      <ul class="vgrid">
+        {volunteer.map(([t, d]) => <li class="card"><b>{t}</b><span>{d}</span></li>)}
+      </ul>
+    </section>
+
+    <section class="board">
+      <h2 class="section-title">{board.season} Board of Directors</h2>
+      {board.members.length ? (
+        <ul class="bgrid">
+          {board.members.map((m) => (
+            <li class="card">
+              <span class="role">{m.role}</span>
+              <span class="name">{m.name}</span>
+              {m.email && <a href={`mailto:${m.email}`}>{m.email}</a>}
+            </li>
+          ))}
+        </ul>
+      ) : <p class="empty">Board members will be posted soon.</p>}
+    </section>
+
+    {sponsors.length > 0 && (
+      <section class="sponsors">
+        <h2 class="section-title">Sponsors</h2>
+        <ul class="bgrid">
+          {sponsors.map((s) => (
+            <li class="card">
+              {s.level && <span class="role">{s.level}</span>}
+              {s.website ? <a class="name" href={s.website} rel="noopener sponsored">{s.name}</a> : <span class="name">{s.name}</span>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </div>
+</Base>
+
+<style>
+  .intro { display: flex; gap: 28px; align-items: center; font-size: 1.15rem; max-width: 52rem; }
+  .intro img { flex: none; }
+  .vol, .board, .sponsors { margin-top: 40px; }
+  .vgrid, .bgrid { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .vgrid li { padding: 16px; display: flex; flex-direction: column; gap: 4px; border-left: 5px solid var(--red); }
+  .vgrid b { color: var(--navy); }
+  .vgrid span { color: var(--muted); font-size: 0.92rem; }
+  .bgrid li { padding: 16px; display: flex; flex-direction: column; gap: 2px; }
+  .role { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red-dark); }
+  .name { font-weight: 800; color: var(--navy); font-size: 1.05rem; text-decoration: none; }
+  .bgrid a:not(.name) { font-size: 0.88rem; word-break: break-all; }
+  @media (max-width: 600px) { .intro { flex-direction: column; text-align: center; } }
+</style>

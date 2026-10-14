@@ -1,0 +1,167 @@
+---
+/** College-style season schedule (modeled on texaslonghorns.com): team tabs, next game day (every team playing, home/away) + countdown,
+ *  record summary, card list grouped by month, and a text-only table view. */
+import type { Team } from "../lib/data";
+import { getGames, getSettings, getTeams, isUpcoming, nextGameDay, record } from "../lib/data";
+import { fmtMonthDay, fmtMonthYear, fmtTime, fmtWeekday, now } from "../lib/time";
+import GameCard from "./GameCard.astro";
+import NextGame from "./NextGame.astro";
+import RecordBar from "./RecordBar.astro";
+
+interface Props { team?: Team }
+const { team } = Astro.props;
+const [allGames, teams, settings] = await Promise.all([getGames(), getTeams(), getSettings()]);
+const games = team ? allGames.filter((g) => g.team.slug === team.slug) : allGames;
+const at = now();
+const nextDay = nextGameDay(games, at);
+const next = nextDay.find((g) => g.status === "Scheduled" && isUpcoming(g, at));
+const rec = team ? record(games) : null;
+
+const months: { label: string; games: typeof games }[] = [];
+for (const g of games) {
+  const label = fmtMonthYear.format(g.start);
+  if (months.at(-1)?.label !== label) months.push({ label, games: [] });
+  months.at(-1)!.games.push(g);
+}
+const feed = `/calendar/${team ? team.slug : "all"}.ics`;
+const women = teams.filter((t) => t.gender === "Women");
+const men = teams.filter((t) => t.gender === "Men");
+---
+<div class="page-band">
+  <div class="wrap">
+    <p class="eyebrow">{settings.season} Season</p>
+    <h1>{team ? `${team.name} Schedule` : "Soccer Schedule"}</h1>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="team-tabs no-print" aria-label="Choose a team">
+    <a href="/schedule/" class:list={{ on: !team }}>All Teams</a>
+    <span class="grp">Women</span>
+    {women.map((t) => <a href={`/schedule/${t.slug}/`} class:list={{ on: team?.slug === t.slug }}>{t.level}</a>)}
+    <span class="grp">Men</span>
+    {men.map((t) => <a href={`/schedule/${t.slug}/`} class:list={{ on: team?.slug === t.slug }}>{t.level}</a>)}
+  </nav>
+
+  {(nextDay.length > 0 || rec) && (
+    <div class:list={["hero", { single: !nextDay.length || !rec }]}>
+      {nextDay.length > 0 && <NextGame games={nextDay} showTeam={!team} />}
+      {rec && (
+        <div class="season-box">
+          <h2 class="section-title">Season Record</h2>
+          <RecordBar rec={rec} districtName={settings.districtName} />
+          <p class="team-link"><a class="more-link" href={`/teams/${team!.slug}/`}>{team!.name} roster &amp; coaches &rarr;</a></p>
+        </div>
+      )}
+    </div>
+  )}
+
+  <div class="toolbar no-print">
+    <div class="views" role="group" aria-label="View">
+      <button type="button" data-view="list" aria-pressed="true">List</button>
+      <button type="button" data-view="text" aria-pressed="false">Text Only</button>
+    </div>
+    <div class="tools">
+      {next && <a class="btn btn-outline btn-sm" href={`#g-${next.id}`}>Jump to next game</a>}
+      <a class="btn btn-outline btn-sm" href={feed} title="Subscribe in Google Calendar, Apple Calendar, or Outlook">Subscribe to Calendar</a>
+      <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">Print</button>
+    </div>
+  </div>
+
+  {games.length === 0 ? (
+    <p class="empty">The {settings.season} schedule hasn't been posted yet. Check back soon!</p>
+  ) : (
+    <>
+      <div class="view-list">
+        {months.map((m) => (
+          <section class="month">
+            <h2 class="month-title">{m.label}</h2>
+            {m.games.map((g) => (
+              <div id={`g-${g.id}`} class="anchor">
+                <GameCard game={g} showTeam={!team} upcoming={isUpcoming(g, at)} />
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+
+      <div class="view-text" hidden>
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr><th>Date</th><th>Time</th>{!team && <th>Team</th>}<th>Opponent</th><th>Location</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+              {games.map((g) => (
+                <tr>
+                  <td>{fmtWeekday.format(g.start)}, {fmtMonthDay.format(g.start)}</td>
+                  <td>{g.timeKnown ? fmtTime.format(g.start) : "TBD"}</td>
+                  {!team && <td>{g.team.name}</td>}
+                  <td>{g.venue === "Away" ? "at" : "vs"} {g.opponent}{g.district && " *"}{g.special && ` (${g.special})`}</td>
+                  <td>{g.location}</td>
+                  <td>{g.result ? `${g.result} ${g.evScore}-${g.oppScore}` : g.status !== "Scheduled" ? g.status : ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="key">* District game</p>
+      </div>
+    </>
+  )}
+</div>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>("[data-view]");
+  const show = (view: string) => {
+    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === view)));
+    document.querySelector<HTMLElement>(".view-list")?.toggleAttribute("hidden", view !== "list");
+    document.querySelector<HTMLElement>(".view-text")?.toggleAttribute("hidden", view !== "text");
+    try { localStorage.setItem("ev-schedule-view", view); } catch {}
+  };
+  buttons.forEach((b) => b.addEventListener("click", () => show(b.dataset.view!)));
+  try { const saved = localStorage.getItem("ev-schedule-view"); if (saved) show(saved); } catch {}
+
+  // Make the calendar feed a webcal:// link so phones offer to subscribe.
+  document.querySelectorAll<HTMLAnchorElement>('a[href$=".ics"]').forEach((a) => {
+    a.href = a.href.replace(/^https?:/, "webcal:");
+  });
+</script>
+
+<style>
+  .team-tabs {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 16px 0; border-bottom: 1px solid var(--line); margin-bottom: 24px;
+  }
+  .team-tabs a {
+    padding: 8px 14px; border-radius: 999px; text-decoration: none; font-weight: 800; font-size: 0.88rem;
+    color: var(--navy); background: var(--soft); border: 1px solid var(--line);
+  }
+  .team-tabs a:hover { border-color: var(--navy); }
+  .team-tabs a.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .grp { margin: 0 2px 0 12px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+
+  .hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start; margin-bottom: 28px; }
+  .hero.single { grid-template-columns: minmax(0, 720px); justify-content: center; }
+  .season-box { display: flex; flex-direction: column; }
+  .team-link { margin: 14px 0 0; }
+
+  .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .views { display: inline-flex; border: 2px solid var(--navy); border-radius: 8px; overflow: hidden; }
+  .views button { border: 0; background: #fff; color: var(--navy); font: 800 0.85rem var(--sans); padding: 8px 16px; cursor: pointer; }
+  .views button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .month-title {
+    font-family: var(--slab); font-weight: 400; text-transform: uppercase; color: var(--navy);
+    font-size: 1.1rem; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 3px solid var(--red);
+    display: inline-block;
+  }
+  .month:first-child .month-title { margin-top: 0; }
+  .anchor { scroll-margin-top: 96px; }
+  .anchor:target :global(.game) { outline: 3px solid var(--red); outline-offset: 2px; }
+  .key { font-size: 0.85rem; color: var(--muted); }
+
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+  @media print { .view-text[hidden] { display: block !important; } .view-list { display: none !important; } }
+</style>

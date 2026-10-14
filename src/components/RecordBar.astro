@@ -1,0 +1,28 @@
+---
+import type { Record_ } from "../lib/data";
+interface Props { rec: Record_; districtName?: string }
+const { rec, districtName = "" } = Astro.props;
+const items = [
+  ["Overall", rec.overall], ["District", rec.district], ["Home", rec.home], ["Away", rec.away], ["Streak", rec.streak],
+];
+---
+<dl class="record card">
+  {items.map(([label, value]) => (
+    <div><dt>{label}</dt><dd class="slab">{value}</dd></div>
+  ))}
+</dl>
+{districtName && <p class="dn">District record: {districtName}</p>}
+
+<style>
+  .record { display: grid; grid-template-columns: repeat(5, 1fr); margin: 0; overflow: hidden; }
+  .record div { padding: 14px 8px; text-align: center; }
+  .record div + div { border-left: 1px solid var(--line); }
+  dt { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .dn { margin: 8px 0 0; font-size: 0.82rem; color: var(--muted); }
+  dd { margin: 4px 0 0; font-size: 1.45rem; color: var(--navy); }
+  @media (max-width: 560px) {
+    .record { grid-template-columns: repeat(3, 1fr); }
+    .record div:nth-child(4) { border-left: 0; }
+    .record div:nth-child(n + 4) { border-top: 1px solid var(--line); }
+  }
+</style>
