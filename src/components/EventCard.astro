@@ -20,11 +20,11 @@ const who = e.audience;
     </p>
     <h3>{e.title}</h3>
     {(e.location || e.address) && (
-      <p class="loc"><a href={mapLink(e.address, e.location)} rel="noopener">{e.location || e.address}</a></p>
+      <p class="loc"><a href={mapLink(e.address, e.location)} target="_blank" rel="noopener">{e.location || e.address}</a></p>
     )}
     {!compact && e.details && <p class="details">{e.details}</p>}
     {who && <p class="who">{who}</p>}
-    {e.link && <a class="btn btn-red btn-sm no-print" href={e.link} rel="noopener">{e.linkText}</a>}
+    {e.link && <a class="btn btn-red btn-sm no-print" href={e.link} target="_blank" rel="noopener">{e.linkText}</a>}
   </div>
   {!compact && e.image && <img class="flyer" src={e.image} alt="" loading="lazy">}
 </article>

@@ -33,8 +33,9 @@ const resultClass = g.result === "W" ? "win" : g.result === "L" ? "loss" : "tie"
       {(g.location || g.address) && (
         <p class="loc">
           <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
-          <a href={mapLink(g.address, g.location)} rel="noopener">{g.location || g.address}</a>
-          {g.location && g.address && <span class="addr">{g.address}</span>}
+          <a href={mapLink(g.address, g.location)} target="_blank" rel="noopener">
+            {g.location || g.address}{g.location && g.address && <span class="addr">{g.address}</span>}
+          </a>
         </p>
       )}
       {g.notes && <p class="notes">{g.notes}</p>}
@@ -50,7 +51,7 @@ const resultClass = g.result === "W" ? "win" : g.result === "L" ? "loss" : "tie"
       <p class="result tie">Canceled</p>
     ) : null}
     <div class="actions no-print">
-      {upcoming && g.ticketsLink && <a class="btn btn-red btn-sm" href={g.ticketsLink} rel="noopener">Tickets</a>}
+      {upcoming && g.ticketsLink && <a class="btn btn-red btn-sm" href={g.ticketsLink} target="_blank" rel="noopener">Tickets</a>}
       {g.recapLink && <a class="btn btn-outline btn-sm" href={g.recapLink} rel="noopener">Recap</a>}
       {upcoming && g.status === "Scheduled" && (
         <a class="btn btn-outline btn-sm" href={googleCalendarLink(g)} rel="noopener" title="Add to Google Calendar">+ Calendar</a>
@@ -78,7 +79,8 @@ const resultClass = g.result === "W" ? "win" : g.result === "L" ? "loss" : "tie"
   .vs { font-weight: 600; color: var(--muted); font-size: 0.95rem; }
   .loc { margin: 4px 0 0; font-size: 0.88rem; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
   .loc a { color: var(--ink); }
-  .addr::before { content: "· "; }
+  .addr { color: var(--muted); }
+  .addr::before { content: " · "; }
   .notes { margin: 4px 0 0; font-size: 0.85rem; color: var(--muted); font-style: italic; }
   .side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
   .result { margin: 0; font-family: var(--slab); font-size: 1.4rem; white-space: nowrap; }

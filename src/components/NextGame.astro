@@ -40,7 +40,7 @@ const single = games.length === 1;
           <div class:list={["col", c.venue.toLowerCase()]}>
             <p class="venue">{c.venue}</p>
             {(c.location || c.address) && (
-              <p class="field"><a href={mapLink(c.address, c.location)} rel="noopener">{c.location || c.address}</a></p>
+              <p class="field"><a href={mapLink(c.address, c.location)} target="_blank" rel="noopener">{c.location || c.address}</a></p>
             )}
             <ul class="times">
               {c.games.map((g) => (
@@ -50,7 +50,7 @@ const single = games.length === 1;
                 </li>
               ))}
             </ul>
-            {c.tickets && <a class="btn btn-red btn-sm tix no-print" href={c.tickets} rel="noopener">Tickets</a>}
+            {c.tickets && <a class="btn btn-red btn-sm tix no-print" href={c.tickets} target="_blank" rel="noopener">Tickets</a>}
           </div>
         ))}
       </div>
