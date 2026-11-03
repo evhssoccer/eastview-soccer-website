@@ -1,5 +1,6 @@
 # Builds the site from the Google Sheet and uploads it to Bluehost.
-# Runs every hour, on every push to main, and on demand (Actions tab → Deploy site → Run workflow).
+# Runs hourly from 8am through the 12:07am run, Central time, plus on every push to main and on demand
+# (Actions tab → Deploy site → Run workflow). Pushes and manual runs work at any hour.
 #
 # Where it goes is set by the DEPLOY_PATH repository variable:
 #   mockup.eastviewsoccer.com  → https://mockup.eastviewsoccer.com (hidden from search engines)
@@ -12,7 +13,9 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "7 * * * *" # hourly, at :07
+    # Cron is UTC only, so this covers both CST and CDT; the "Check quiet hours" step skips
+    # whichever run lands outside 8am-12:59am Central.
+    - cron: "7 13-23,0-6 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -27,16 +30,31 @@ jobs:
     env:
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
     steps:
+      - name: Check quiet hours
+        id: gate
+        run: |
+          hour=$(TZ=America/Chicago date +%-H)
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$hour" -ge 1 ] && [ "$hour" -lt 8 ]; then
+            echo "Quiet hours ($hour:00 Central): skipping this scheduled run."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
 
       - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
         with:
           node-version: 24
           cache: npm
 
       - run: npm ci
+        if: steps.gate.outputs.run == 'true'
 
       - name: Build from Google Sheet
+        if: steps.gate.outputs.run == 'true'
         run: |
           if [ "$DEPLOY_PATH" != "public_html" ]; then export NOINDEX=1; fi
           npm run build
@@ -46,6 +64,7 @@ jobs:
           ROSTER_PUB_ID: ${{ vars.ROSTER_PUB_ID }}
 
       - name: Set up SSH
+        if: steps.gate.outputs.run == 'true'
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
@@ -55,6 +74,7 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
       - name: Test Bluehost connection
+        if: steps.gate.outputs.run == 'true'
         env:
           SSH_HOST: ${{ vars.DEPLOY_HOST }}
           SSH_USER: ${{ vars.DEPLOY_USER }}
@@ -63,7 +83,7 @@ jobs:
             "$SSH_USER@$SSH_HOST" 'echo "Connected to Bluehost as $(whoami)"'
 
       - name: Upload to Bluehost
-        if: env.DEPLOY_PATH != ''
+        if: steps.gate.outputs.run == 'true' && env.DEPLOY_PATH != ''
         env:
           SSH_HOST: ${{ vars.DEPLOY_HOST }}
           SSH_USER: ${{ vars.DEPLOY_USER }}
@@ -76,5 +96,5 @@ jobs:
             dist/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
 
       - name: Dry run summary
-        if: env.DEPLOY_PATH == ''
+        if: steps.gate.outputs.run == 'true' && env.DEPLOY_PATH == ''
         run: echo "::notice::Dry run OK - the site built from the Google Sheet and Bluehost accepted the deploy key. Nothing was uploaded because DEPLOY_PATH is not set."
