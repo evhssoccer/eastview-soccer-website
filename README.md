@@ -7,8 +7,9 @@ edited in this code for day-to-day updates.
 ## How updates reach the site
 
 1. An approved volunteer edits the Google Sheet.
-2. Every hour, a GitHub Action (`.github/workflows/deploy.yml`) rebuilds the site from the published
-   sheet and uploads it to Bluehost (`public_html`) over SSH.
+2. Every 15 minutes during the day (about 7am-9pm Central), a GitHub Action
+   (`.github/workflows/deploy.yml`) rebuilds the site from the published sheet and uploads it to
+   Bluehost (`public_html`) over SSH. GitHub can start scheduled runs late.
 3. To publish right away: GitHub → **Actions** → **Deploy site** → **Run workflow**.
 
 If the sheet can't be read, the build fails and the current site stays up unchanged.
