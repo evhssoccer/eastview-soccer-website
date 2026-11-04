@@ -43,6 +43,18 @@ const results = games.filter((g) => g.result).slice(-4).reverse();
   <div class="wrap">
     <section class="section">
       <div class="section-head">
+        <h2 class="section-title">Upcoming Events</h2>
+        <a class="more-link" href="/events/">All events &rarr;</a>
+      </div>
+      {upcomingEvents.length ? (
+        <div class="events-grid">
+          {upcomingEvents.map((e) => <EventCard event={e} compact />)}
+        </div>
+      ) : <p class="empty">No upcoming events right now. Follow us on Instagram for the latest news.</p>}
+    </section>
+
+    <section class="section">
+      <div class="section-head">
         <h2 class="section-title">Upcoming Games</h2>
         <a class="more-link" href="/schedule/">All games &rarr;</a>
       </div>
@@ -91,18 +103,6 @@ const results = games.filter((g) => g.result).slice(-4).reverse();
           )}
         </div>
       )}
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <h2 class="section-title">Upcoming Events</h2>
-        <a class="more-link" href="/events/">All events &rarr;</a>
-      </div>
-      {upcomingEvents.length ? (
-        <div class="events-grid">
-          {upcomingEvents.map((e) => <EventCard event={e} compact />)}
-        </div>
-      ) : <p class="empty">No upcoming events right now. Follow us on Instagram for the latest news.</p>}
     </section>
 
     {results.length > 0 && (
