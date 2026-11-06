@@ -42,7 +42,8 @@ const who = e.audience;
   h3 { font-size: 1.1rem; color: var(--navy); margin-bottom: 4px; }
   .loc { margin: 0 0 6px; font-size: 0.88rem; }
   .loc a { color: var(--muted); }
-  .details { margin: 0 0 8px; font-size: 0.95rem; }
+  /* Keep the line breaks typed into the sheet's Details cell (Alt+Enter / Ctrl+Enter). */
+  .details { margin: 0 0 8px; font-size: 0.95rem; white-space: pre-line; }
   .who { margin: 0 0 10px; font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .flyer { width: 160px; border-radius: 8px; border: 1px solid var(--line); }
   @media (max-width: 600px) { .flyer { display: none; } }
