@@ -48,7 +48,7 @@ const results = games.filter((g) => g.result).slice(-4).reverse();
       </div>
       {upcomingEvents.length ? (
         <div class="events-grid">
-          {upcomingEvents.map((e) => <EventCard event={e} compact />)}
+          {upcomingEvents.map((e) => <EventCard event={e} compact showDetails />)}
         </div>
       ) : <p class="empty">No upcoming events right now. Follow us on Instagram for the latest news.</p>}
     </section>
