@@ -206,7 +206,8 @@ export async function getGames(): Promise<Game[]> {
       location: r["Location"] || host.stadium, address: r["Address"] || (r["Location"] ? "" : host.address),
       district: districtCell ? yes(districtCell) : !!o?.district, special: r["Special"] ?? "",
       status, evScore: ev, oppScore: opp, result,
-      ticketsLink: r["Tickets Link"] || host.tickets, watchLink: r["Watch Link"] ?? "",
+      // Scrimmages don't sell tickets, so they never get a Tickets button.
+      ticketsLink: /scrimmage/i.test(r["Special"] ?? "") ? "" : r["Tickets Link"] || host.tickets, watchLink: r["Watch Link"] ?? "",
       recapLink: r["Recap Link"] ?? "", opponentLogo: imageUrl(r["Opponent Logo"] || o?.logo || "") || localLogo(r["Opponent"]),
       opponentMascot: o?.mascot ?? "",
       notes: r["Notes"] ?? "",
