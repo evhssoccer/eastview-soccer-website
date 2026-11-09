@@ -43,7 +43,7 @@ node scripts/make-sample-data.mjs             # regenerate the sample CSVs (all 
 | Kind | Name | Value |
 |---|---|---|
 | Variable | `SHEET_PUB_ID` | `2PACX-1vTtp4eeMgi9CHHhYRZIGCT_9qfldAubNwXB-Y_D4ju1Bm5MLuiQDL_HU2Kt5XRBz2m3PgvYbUrfqzat` (from the sheet's *Publish to web* link) |
-| Variable | `ROSTER_PUB_ID` | `2PACX-1vQn2OYI_MSKwMJTWoM6hNrJO1GT8nZAsUbjTMsldGaV9NFt2Mj0Hyzgt6GCGbZ92f8ZNFfMlRjm4bAS` (the separate *2026-2027-Rosters* sheet; leave unset to use the main sheet's Players tab) |
+| Variable | `ROSTER_PUB_ID` | Optional, currently **not set**: players come from the main sheet's Players tab. Set it to another sheet's *Publish to web* ID only to read players from a separate roster spreadsheet. |
 | Variable | `DEPLOY_PATH` | `mockup.eastviewsoccer.com` or `public_html` (live site). Leave unset to pause deploys. |
 | Variable | `DEPLOY_HOST` | `162.241.217.192` |
 | Variable | `DEPLOY_USER` | `eastvie6` |
