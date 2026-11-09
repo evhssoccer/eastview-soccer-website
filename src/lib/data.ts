@@ -82,7 +82,7 @@ function resolveTeams(value: string, teams: Team[]): Team[] {
   const out = new Set<Team>();
   for (const part of list(value)) {
     const p = part.toLowerCase();
-    if (p === "all") teams.forEach((t) => out.add(t));
+    if (p === "all" || p === "all teams") teams.forEach((t) => out.add(t));
     else if (/^(women|girls)$/.test(p)) teams.filter((t) => t.gender === "Women").forEach((t) => out.add(t));
     else if (/^(men|boys)$/.test(p)) teams.filter((t) => t.gender === "Men").forEach((t) => out.add(t));
     else {
@@ -339,10 +339,13 @@ export async function getEvents(): Promise<ClubEvent[]> {
     const endDay = ed ?? d;
     const end = ed || et ? centralDate(endDay[0], endDay[1], endDay[2], et?.[0] ?? 23, et?.[1] ?? 59) : null;
     const teamList = resolveTeams(r["Teams"] || "All", teams);
+    // Non-team audiences from the dropdown ("Booster Members", "Booster Board") are shown as typed.
+    const others = list(r["Teams"] ?? "").filter((p) => /^booster/i.test(p));
+    const who = [teamList.length ? audience(teamList, teams) : "", ...others].filter(Boolean).join(", ");
     events.push({
       id: `${dayKey(start)}-${slugify(r["Title"])}`,
       title: r["Title"], start, end, timeKnown: !!t, endTime: r["End Time"] ?? "",
-      teams: teamList, allTeams: teamList.length === teams.length, audience: audience(teamList, teams),
+      teams: teamList, allTeams: teamList.length === teams.length, audience: who,
       location: r["Location"] ?? "", address: r["Address"] ?? "",
       details: r["Details"] ?? "", link: r["Link"] ?? "",
       linkText: r["Link Text"] || "Details", image: r["Image"] ?? "",
