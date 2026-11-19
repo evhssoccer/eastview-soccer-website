@@ -448,6 +448,56 @@ export async function getBoard(): Promise<{ season: string; members: BoardMember
   };
 }
 
+// ---------------------------------------------------------------- Store
+
+export interface ProductOption { name: string; price: string; buyLink: string }
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  /** Set when every option checks out through the same link (e.g. one Square link with variations). */
+  buyLink: string;
+  buttonText: string;
+  options: ProductOption[];
+  sort: number;
+}
+
+/** "10" or "10.5" → "$10" / "$10.50"; anything else ("$5 online", "Free") is shown as typed. */
+function price(v: string): string {
+  const n = num(v.replace(/^\$/, ""));
+  return n === null ? v.trim() : `$${n % 1 ? n.toFixed(2) : n}`;
+}
+
+/** Store tab: one row per option; rows with the same Product name make one product card. */
+export async function getProducts(): Promise<Product[]> {
+  const today = dayKey(now());
+  const byName = new Map<string, Product>();
+  for (const r of await loadTab("Store")) {
+    const name = (r["Product"] ?? "").trim();
+    if (!shown(r) || !name) continue;
+    const until = parseDate(r["Available Until"] ?? "");
+    if (until && dayKey(centralDate(until[0], until[1], until[2], 12, 0)) < today) continue;
+    let p = byName.get(name.toLowerCase());
+    if (!p) {
+      p = { id: slugify(name), name, description: "", image: "", buyLink: "", buttonText: "", options: [], sort: 99 };
+      byName.set(name.toLowerCase(), p);
+    }
+    p.description ||= r["Description"] ?? "";
+    p.image ||= imageUrl(r["Image"] ?? "");
+    p.buttonText ||= r["Button Text"] ?? "";
+    p.sort = Math.min(p.sort, num(r["Sort"] ?? "") ?? 99);
+    p.options.push({ name: (r["Option"] ?? "").trim(), price: price(r["Price"] ?? ""), buyLink: (r["Buy Link"] ?? "").trim() });
+  }
+  const products = [...byName.values()];
+  for (const p of products) {
+    const links = new Set(p.options.map((o) => o.buyLink).filter(Boolean));
+    if (links.size === 1) p.buyLink = [...links][0];
+    p.buttonText ||= "Buy Now";
+  }
+  return products.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
+}
+
 export interface Sponsor { name: string; level: string; website: string; logo: string; sort: number }
 
 export async function getSponsors(): Promise<Sponsor[]> {

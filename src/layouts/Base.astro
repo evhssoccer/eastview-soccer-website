@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { getSettings, getTeams } from "../lib/data";
+import { getProducts, getSettings, getTeams } from "../lib/data";
 import { usingSampleData } from "../lib/sheet";
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
   active?: string;
 }
 const { title, description, active = "" } = Astro.props;
-const [settings, teams] = await Promise.all([getSettings(), getTeams()]);
+const [settings, teams, products] = await Promise.all([getSettings(), getTeams(), getProducts()]);
 const pageTitle = title ? `${title} | East View Soccer` : "East View Soccer | Georgetown, TX";
 const desc = description ?? `East View High School Soccer Booster Club, Georgetown, TX. Schedules, rosters, and events for the ${settings.season} season.`;
 const women = teams.filter((t) => t.gender === "Women");
@@ -20,6 +20,8 @@ const nav = [
   ["Teams", "/teams/", "teams"],
   ["Coaches", "/coaches/", "coaches"],
   ["Events", "/events/", "events"],
+  // The Store link only appears while the sheet's Store tab has something for sale.
+  ...(products.length ? [["Store", "/store/", "store"]] : []),
   ["About", "/about/", "about"],
   ["Contact", "/contact/", "contact"],
 ];

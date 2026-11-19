@@ -56,7 +56,8 @@ h1, h2, h3 { line-height: 1.15; margin: 0; }
 }
 .page-band h1 { font-family: var(--slab); font-weight: 400; font-size: clamp(1.8rem, 5vw, 2.6rem); text-transform: uppercase; }
 
-.section { padding: 36px 0; }
+/* Top/bottom only, so `.wrap section` keeps the 16px side gutter on phones. */
+.section { padding-top: 36px; padding-bottom: 36px; }
 .section-title {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--slab); font-weight: 400; text-transform: uppercase;

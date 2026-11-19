@@ -70,7 +70,7 @@ function discoverGids(id: string): Promise<Record<string, string>> {
 
 const csvUrl = (id: string, gid: string) => `${pubBase(id)}/pub?gid=${gid}&single=true&output=csv`;
 
-const OPTIONAL_TABS = ["Opponents", "Sponsors"];
+const OPTIONAL_TABS = ["Opponents", "Sponsors", "Store"];
 
 const cache = new Map<string, Promise<Row[]>>();
 

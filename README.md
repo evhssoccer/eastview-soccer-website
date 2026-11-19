@@ -16,7 +16,12 @@ If the sheet can't be read, the build fails and the current site stays up unchan
 
 ## Sheet tabs
 
-`Settings`, `Teams`, `Games`, `Events`, `Opponents`, `Players`, `Coaches`, `Board`, `Sponsors`.
+`Settings`, `Teams`, `Games`, `Events`, `Opponents`, `Players`, `Coaches`, `Board`, `Sponsors`, `Store`.
+
+**Store:** one row per option (same Product name on each row) with a Price and the Square checkout
+link in Buy Link. The `/store/` page groups the rows into product cards; one Buy button when all
+options share a link, otherwise a button per option. Rows past their Available Until date drop off,
+and the Store menu link only shows while something is for sale.
 A game row only needs Date, Time, Team, Opponent, and Home/Away; blank Location/Address/Tickets Link
 fall back to the `Opponents` tab (away games) or the Home Stadium/Address/Tickets settings (home games). Instructions for
 editors are on the sheet's **Read Me** tab. The starter file is `sheet-template/EastView-Soccer-Website-Data.xlsx`.

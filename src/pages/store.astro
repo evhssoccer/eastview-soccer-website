@@ -1,0 +1,63 @@
+---
+import Base from "../layouts/Base.astro";
+import { getProducts, getSettings } from "../lib/data";
+
+const [products, settings] = await Promise.all([getProducts(), getSettings()]);
+---
+<Base title="Store" active="store" description="Buy East View Soccer Booster Club tickets and merchandise online.">
+  <div class="page-band">
+    <div class="wrap">
+      <p class="eyebrow">{settings.season} Season</p>
+      <h1>Booster Club Store</h1>
+    </div>
+  </div>
+  <div class="wrap section">
+    {products.length ? (
+      <div class="grid">
+        {products.map((p) => (
+          <article class="product card" id={p.id}>
+            {p.image && <img class="photo" src={p.image} alt="" loading="lazy">}
+            <div class="body">
+              <h2>{p.name}</h2>
+              {p.description && <p class="desc">{p.description}</p>}
+              {p.options.some((o) => o.name || o.price) && (
+                <ul class="options">
+                  {p.options.map((o) => (
+                    <li>
+                      <span class="opt">{o.name}</span>
+                      {o.price && <span class="price">{o.price}</span>}
+                      {!p.buyLink && o.buyLink && (
+                        <a class="btn btn-red btn-sm" href={o.buyLink} target="_blank" rel="noopener">{p.buttonText}</a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {p.buyLink && (
+                <a class="btn btn-red buy" href={p.buyLink} target="_blank" rel="noopener">{p.buttonText}</a>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <p class="empty">Nothing for sale right now. Check back soon!</p>
+    )}
+    <p class="secure">Checkout opens in a new tab and is handled securely by Square. Questions? Email <a href={`mailto:${settings.email}`}>{settings.email}</a>.</p>
+  </div>
+</Base>
+
+<style>
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .product { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+  .photo { width: 100%; aspect-ratio: 2 / 1; object-fit: cover; display: block; }
+  .body { padding: 18px 20px 20px; display: flex; flex-direction: column; flex: 1; }
+  h2 { font-size: 1.25rem; color: var(--navy); margin: 0 0 8px; }
+  .desc { margin: 0 0 14px; font-size: 0.95rem; white-space: pre-line; }
+  .options { list-style: none; margin: 0 0 16px; padding: 0; border-top: 1px solid var(--line); }
+  .options li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .opt { flex: 1; font-weight: 700; }
+  .price { font-weight: 800; color: var(--red-dark); font-size: 1.05rem; }
+  .buy { margin-top: auto; align-self: stretch; text-align: center; }
+  .secure { margin-top: 28px; font-size: 0.88rem; color: var(--muted); }
+</style>
