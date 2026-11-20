@@ -56,7 +56,7 @@ const noindex = sample || process.env.NOINDEX === "1";
     <div class="announce">
       <div class="wrap">
         {settings.announcementLink
-          ? <a href={settings.announcementLink}>{settings.announcement} &rarr;</a>
+          ? <a href={settings.announcementLink} target="_blank" rel="noopener">{settings.announcement} &rarr;</a>
           : <span>{settings.announcement}</span>}
       </div>
     </div>
