@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import SocialIcon from "../components/SocialIcon.astro";
 import { getProducts, getSettings, getTeams } from "../lib/data";
 import { usingSampleData } from "../lib/sheet";
 
@@ -125,11 +126,11 @@ const noindex = sample || process.env.NOINDEX === "1";
       <div>
         <h2>Follow</h2>
         <ul>
-          <li><a href="https://www.facebook.com/profile.php?id=61596832228405" target="_blank" rel="noopener">East View Soccer on Facebook</a></li>
-          <li><a href="https://www.instagram.com/evhsgirlssoccerofficial/" target="_blank" rel="noopener">Women's soccer on Instagram</a></li>
-          <li><a href="https://www.instagram.com/evhsmenssoccerofficial/" target="_blank" rel="noopener">Men's soccer on Instagram</a></li>
-          <li><a href="https://x.com/ev_soccer" target="_blank" rel="noopener">@ev_soccer on X</a></li>
-          <li><a href="https://x.com/patriotsoccerev" target="_blank" rel="noopener">@patriotsoccerev on X</a></li>
+          <li><a href="https://www.facebook.com/profile.php?id=61596832228405" target="_blank" rel="noopener"><SocialIcon name="facebook" />East View Soccer on Facebook</a></li>
+          <li><a href="https://www.instagram.com/evhsgirlssoccerofficial/" target="_blank" rel="noopener"><SocialIcon name="instagram" />Women's soccer on Instagram</a></li>
+          <li><a href="https://www.instagram.com/evhsmenssoccerofficial/" target="_blank" rel="noopener"><SocialIcon name="instagram" />Men's soccer on Instagram</a></li>
+          <li><a href="https://x.com/ev_soccer" target="_blank" rel="noopener"><SocialIcon name="x" />@ev_soccer on X</a></li>
+          <li><a href="https://x.com/patriotsoccerev" target="_blank" rel="noopener"><SocialIcon name="x" />@patriotsoccerev on X</a></li>
         </ul>
       </div>
       <div>
